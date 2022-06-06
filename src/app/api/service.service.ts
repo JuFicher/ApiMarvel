@@ -7,25 +7,31 @@ import {Md5} from 'ts-md5/dist/md5';
   providedIn: 'root'
 })
 export class ServiceService {
-  private publicKey = "";
-  private privateKey = "";
-  private host = "http://gateway.marvel.com/";
+  private publicKey  = '';
+  private privateKey = '';
 
-  constructor (private http: HttpClient){}
+  private host = 'http://gateway.marvel.com/';
 
-  public getDados(url: string, parameters: string){
-    let ts = this.generateTs;
+  constructor(private http: HttpClient) { }
+
+  getDados(url:string, parameters:string){
+    let ts = this.generateTs();
+
     return new Promise((ret) => {
-      this.http.get(this.host + url + '?ts=' + ts + '&apikey=' + this.publicKey + '&hash=' + this.getHash(ts) + parameters).subscribe((response) => {
-        if(response){
-          ret(response);
-        } else {
+      this.getKeys().then(_ => {
+        this.http.get(this.host + url + '?ts=' + ts + '&apikey=' + this.publicKey + '&hash=' + this.getHash(ts) + parameters).subscribe((response) => {
+
+          if(response){
+              ret(response);
+          } else {
+              ret(false);
+          }
+        },
+         (erro) => {
           ret(false);
-        }
-      })
-
-    })
-
+        });
+      });
+    });
   }
 
   private generateTs(){
@@ -33,18 +39,21 @@ export class ServiceService {
   }
 
   private getHash(ts){
-    return Md5.hashStr(ts + this.privateKey + this.publicKey);
+      return Md5.hashStr(ts + this.privateKey + this.publicKey);
   }
 
   private getKeys(){
     return new Promise((ret) => {
-      this.http.get('assets/keys.json').subscribe((keys: any) => {
+      this.http.get('assets/keys.json').subscribe((keys:any) => {
         this.publicKey = keys.public;
         this.privateKey = keys.private;
-        
         ret(true);
-      })
-    })
-  }
 
+      },
+       err => {
+        alert('Chaves de acesso inválidas.');
+        ret(false);
+      });
+    });
+  }
 }
